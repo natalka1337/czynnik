@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Factor">
+  <meta name="apple-mobile-web-app-title" content="Czynnik">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="manifest" href="manifest.json">
   <title>Czynnik</title>
@@ -13,13 +13,13 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: #16141C;
-      color: #FFEDD5;
+      background-color: #050625;
+      color: #da6518;
       padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 24px) 16px;
       user-select: none;
     }
     .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
-    .title { font-size: 28px; font-weight: 900; color: #E84A27; letter-spacing: 1.5px; }
+    .title { font-size: 28px; font-weight: 900; color: #e62910; letter-spacing: 1.5px; }
     .top-actions { display: flex; gap: 8px; }
     .icon-btn {
       background: #2A2433; border: 1px solid #F59E0B; color: #FBBF24;
@@ -48,7 +48,7 @@
     }
     .btn-row { display: flex; gap: 10px; margin-top: 6px; }
     .save-btn {
-      flex: 1; background: #E84A27; color: #FFF; border: none;
+      flex: 1; background: #e62910; color: #FFF; border: none;
       padding: 12px; border-radius: 8px; font-weight: 800; font-size: 15px;
     }
     .save-btn.editing { background: #D97706; }
@@ -58,7 +58,7 @@
     }
     .card {
       background: #221E2B; padding: 12px; border-radius: 10px;
-      border: 1px solid #3B2832; border-left: 4px solid #E84A27; margin-bottom: 8px;
+      border: 1px solid #3B2832; border-left: 4px solid #e62910; margin-bottom: 8px;
     }
     .card.editing { border-color: #FACC15; border-left-color: #FACC15; }
     .card-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
@@ -81,13 +81,13 @@
       body { background: #FFF; color: #16141C; padding: 0; }
       #app-ui { display: none; }
       #print-area { display: block; padding: 16px; }
-      .p-title { font-size: 22px; color: #E84A27; text-transform: uppercase; margin-bottom: 4px; }
-      .p-div { height: 2px; background: #F59E0B; margin-bottom: 12px; }
+      .p-title { font-size: 22px; color: #000000; text-transform: uppercase; margin-bottom: 4px; }
+      .p-div { height: 2px; background: #000000; margin-bottom: 12px; }
       .p-meta { font-size: 12px; color: #57534E; margin-bottom: 16px; }
       table { width: 100%; border-collapse: collapse; font-size: 12px; }
       th, td { border: 1px solid #D6D3D1; padding: 8px 10px; text-align: left; }
-      th { background: #221E2B !important; color: #FBBF24 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      tr:nth-child(even) { background: #FAF8F5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      th { background: #E5E5E5 !important; color: #000000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      tr:nth-child(even) { background: #F5F5F5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .p-sum { margin-top: 16px; font-size: 13px; font-weight: bold; text-align: right; }
     }
   </style>
@@ -97,22 +97,22 @@
     <div class="header">
       <div class="title">Czynnik</div>
       <div class="top-actions">
-        <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
-        <button class="pdf-btn" onclick="exportPDF()">Export PDF</button>
+        <button class="icon-btn" onclick="toggleSettings()">Logowanie</button>
+        <button class="pdf-btn" onclick="exportPDF()">Eksportuj do PDF</button>
       </div>
     </div>
     <div class="accent-line"></div>
 
     <div id="settings-panel" class="panel" style="display: none;">
       <div class="col-full">
-        <label>GitHub Token</label>
-        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
+        <label>Token GitHub</label>
+        <input type="text" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
       </div>
       <div class="col-full">
-        <label>Repository</label>
-        <input type="text" id="gh-repo" placeholder="username/repo">
+        <label>Repozytorium</label>
+        <input type="text" id="gh-repo" placeholder="nazwa-uzytkownika/repozytorium">
       </div>
-      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+      <button class="save-btn" onclick="saveSettings()">Zapisz ustawienia</button>
     </div>
 
     <div class="sync-status" id="sync-status"></div>
@@ -120,27 +120,27 @@
     <div class="panel">
       <div class="row">
         <div class="col">
-          <label>Date</label>
+          <label>Data</label>
           <input type="date" id="date">
         </div>
         <div class="col">
-          <label>Batch Number</label>
+          <label>Numer serii</label>
           <input type="text" id="batch" autocapitalize="characters">
         </div>
       </div>
       <div class="row">
         <div class="col">
-          <label>Units (IU)</label>
+          <label>Jednostki (IU)</label>
           <input type="number" id="units" inputmode="numeric">
         </div>
         <div class="col">
-          <label>Notes</label>
+          <label>Uwagi</label>
           <input type="text" id="notes">
         </div>
       </div>
       <div class="btn-row">
-        <button class="save-btn" id="saveBtn" onclick="saveEntry()">Save Entry</button>
-        <button class="cancel-btn" id="cancelBtn" onclick="cancelEdit()">Cancel</button>
+        <button class="save-btn" id="saveBtn" onclick="saveEntry()">Zapisz wpis</button>
+        <button class="cancel-btn" id="cancelBtn" onclick="cancelEdit()">Anuluj</button>
       </div>
     </div>
 
@@ -148,17 +148,17 @@
   </div>
 
   <div id="print-area">
-    <h1 class="p-title">Ksiazeczka podawania czynnika Kajetan Handzlik</h1>
+    <h4 class="p-title">Rejestr Podań Kajetan Handzlik</h4>
     <div class="p-div"></div>
     <div class="p-meta" id="p-date"></div>
     <table>
       <thead>
         <tr>
-          <th style="width:6%; text-align:center;">No.</th>
-          <th style="width:20%;">Date</th>
-          <th style="width:22%;">Batch Number</th>
-          <th style="width:15%; text-align:right;">Units</th>
-          <th style="width:37%;">Notes</th>
+          <th style="width:6%; text-align:center;">Lp.</th>
+          <th style="width:20%;">Data</th>
+          <th style="width:22%;">Nr serii</th>
+          <th style="width:15%; text-align:right;">Jednostki</th>
+          <th style="width:37%;">Uwagi</th>
         </tr>
       </thead>
       <tbody id="p-body"></tbody>
@@ -319,7 +319,7 @@
     function render() {
       const list = document.getElementById('list');
       if (entries.length === 0) {
-        list.innerHTML = '<div class="empty">No entries recorded yet.</div>';
+        list.innerHTML = '<div class="empty">Brak wpisów.</div>';
         return;
       }
       list.innerHTML = entries.map(item => `
@@ -327,12 +327,12 @@
           <div class="card-header">
             <span class="card-date">${escapeHtml(item.date)}</span>
             <div class="actions">
-              <button class="edit-btn" onclick="startEdit('${item.id}')">Edit</button>
-              <button class="del-btn" onclick="deleteEntry('${item.id}')">Delete</button>
+              <button class="edit-btn" onclick="startEdit('${item.id}')">Edytuj</button>
+              <button class="del-btn" onclick="deleteEntry('${item.id}')">Usuń</button>
             </div>
           </div>
           <div class="card-details">
-            <span class="badge">Batch: ${escapeHtml(item.batchNumber)}</span>
+            <span class="badge">Seria: ${escapeHtml(item.batchNumber)}</span>
             <span class="units">${escapeHtml(item.units)} IU</span>
           </div>
           ${item.notes ? `<div class="notes">${escapeHtml(item.notes)}</div>` : ''}
@@ -369,7 +369,7 @@
       document.getElementById('units').value = item.units;
       document.getElementById('notes').value = item.notes || '';
       const saveBtn = document.getElementById('saveBtn');
-      saveBtn.textContent = 'Update Entry';
+      saveBtn.textContent = 'Aktualizuj wpis';
       saveBtn.classList.add('editing');
       document.getElementById('cancelBtn').style.display = 'block';
       render();
@@ -381,7 +381,7 @@
       document.getElementById('units').value = '';
       document.getElementById('notes').value = '';
       const saveBtn = document.getElementById('saveBtn');
-      saveBtn.textContent = 'Save Entry';
+      saveBtn.textContent = 'Zapisz wpis';
       saveBtn.classList.remove('editing');
       document.getElementById('cancelBtn').style.display = 'none';
       render();
@@ -398,7 +398,7 @@
     function exportPDF() {
       if (entries.length === 0) return;
       const total = entries.reduce((s, i) => s + Number(i.units), 0);
-      document.getElementById('p-date').textContent = 'Generated on: ' + todayStr();
+      document.getElementById('p-date').textContent = 'Wygenerowano: ' + todayStr();
       document.getElementById('p-body').innerHTML = entries.map((item, i) => `
         <tr>
           <td style="text-align:center;">${i + 1}</td>
@@ -408,7 +408,7 @@
           <td>${escapeHtml(item.notes || '-')}</td>
         </tr>
       `).join('');
-      document.getElementById('p-sum').textContent = `Total Entries: ${entries.length}`;
+      document.getElementById('p-sum').textContent = `Liczba wpisów: ${entries.length} | Łącznie jednostek: ${total} IU`;
       window.print();
     }
 
