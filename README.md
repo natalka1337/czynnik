@@ -1,1 +1,1 @@
-personal app for loging medicine administration
+personal app for logging medicine administration
