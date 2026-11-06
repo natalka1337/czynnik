@@ -190,6 +190,12 @@
         return String.fromCharCode('0x' + p1);
       }));
     }
+    
+    function base64ToUtf8(str) {
+      return decodeURIComponent(atob(str.replace(/\s/g, '')).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+    }
 
     function toggleSettings() {
       const panel = document.getElementById('settings-panel');
@@ -200,7 +206,7 @@
       localStorage.setItem('gh_token', document.getElementById('gh-token').value.trim());
       localStorage.setItem('gh_repo', document.getElementById('gh-repo').value.trim());
       toggleSettings();
-      syncToGitHub();
+      fetchFromGitHub();
     }
 
     function updateSyncStatus(msg, isError = false) {
@@ -208,16 +214,73 @@
       status.textContent = msg;
       status.style.color = isError ? '#F87171' : '#9CA3AF';
     }
+    
+    async function fetchFromGitHub() {
+      const token = localStorage.getItem('gh_token');
+      const repo = localStorage.getItem('gh_repo');
+      if (!token || !repo) return;
+
+      updateSyncStatus('Pobieranie danych z GitHub...');
+      const url = `https://api.github.com/repos/${repo}/contents/data.json`;
+      const headers = { Authorization: `token ${token}`, 'Accept': 'application/vnd.github.v3+json' };
+
+      try {
+        const getRes = await fetch(url, { headers });
+        if (getRes.ok) {
+          const getData = await getRes.json();
+          if (getData.content) {
+            const remoteEntries = JSON.parse(base64ToUtf8(getData.content));
+            const localIds = new Set(entries.map(e => e.id));
+            const missingRemotes = remoteEntries.filter(e => !localIds.has(e.id));
+            
+            if (missingRemotes.length > 0) {
+              entries = [...entries, ...missingRemotes].sort((a,b) => new Date(b.date) - new Date(a.date) || b.id - a.id);
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+              render();
+            }
+          }
+          updateSyncStatus('Dane pobrane pomyślnie.');
+        } else if (getRes.status !== 404) {
+          throw new Error('Błąd odczytu pliku.');
+        }
+      } catch (e) {
+        updateSyncStatus('Błąd pobierania: ' + e.message, true);
+      }
+    }
+    
+    async function backupToGitHub(contentBase64) {
+      const token = localStorage.getItem('gh_token');
+      const repo = localStorage.getItem('gh_repo');
+      const url = `https://api.github.com/repos/${repo}/contents/backup.json`;
+      const headers = { Authorization: `token ${token}`, 'Content-Type': 'application/json' };
+      
+      try {
+        const getRes = await fetch(url, { headers });
+        let sha = '';
+        if (getRes.ok) sha = (await getRes.json()).sha;
+        
+        await fetch(url, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ message: 'Utworzenie kopii zapasowej', content: contentBase64, sha: sha || undefined })
+        });
+      } catch (e) {}
+    }
 
     async function syncToGitHub() {
       const token = localStorage.getItem('gh_token');
       const repo = localStorage.getItem('gh_repo');
       if (!token || !repo) {
-        updateSyncStatus('GitHub sync not configured.');
+        updateSyncStatus('Brak autoryzacji GitHub.');
+        return;
+      }
+      
+      if (entries.length === 0 && !confirm('Lokalna baza jest pusta. Zezwolić na wyczyszczenie danych na serwerze?')) {
+        updateSyncStatus('Synchronizacja przerwana.');
         return;
       }
 
-      updateSyncStatus('Syncing to GitHub...');
+      updateSyncStatus('Wysyłanie na serwer GitHub...');
       const url = `https://api.github.com/repos/${repo}/contents/data.json`;
       const headers = { Authorization: `token ${token}`, 'Content-Type': 'application/json' };
 
@@ -228,26 +291,28 @@
           const getData = await getRes.json();
           sha = getData.sha;
         } else if (getRes.status !== 404) {
-          throw new Error('Failed to fetch file data.');
+          throw new Error('Brak uprawnień dostępu.');
         }
 
         const contentStr = JSON.stringify(entries, null, 2);
         const contentBase64 = utf8ToBase64(contentStr);
+        
+        await backupToGitHub(contentBase64);
 
         const putRes = await fetch(url, {
           method: 'PUT',
           headers,
           body: JSON.stringify({
-            message: 'Update entries via App',
+            message: 'Zapis nowych danych',
             content: contentBase64,
             sha: sha || undefined
           })
         });
 
-        if (!putRes.ok) throw new Error('Failed to push data.');
-        updateSyncStatus('Successfully synced to GitHub.');
+        if (!putRes.ok) throw new Error('Błąd zapisu pliku.');
+        updateSyncStatus('Zapisano z pomyślną kopią zapasową.');
       } catch (e) {
-        updateSyncStatus('Sync failed: ' + e.message, true);
+        updateSyncStatus('Błąd synchronizacji: ' + e.message, true);
       }
     }
 
@@ -348,7 +413,7 @@
     }
 
     render();
-    syncToGitHub();
+    fetchFromGitHub();
   </script>
 </body>
 </html>
