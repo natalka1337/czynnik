@@ -8,7 +8,7 @@
   <meta name="apple-mobile-web-app-title" content="Factor">
   <link rel="apple-touch-icon" href="icon.png">
   <link rel="manifest" href="manifest.json">
-  <title>Factor</title>
+  <title>Czynnik</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
@@ -95,7 +95,7 @@
 <body>
   <div id="app-ui">
     <div class="header">
-      <div class="title">FACTOR</div>
+      <div class="title">Czynnik</div>
       <div class="top-actions">
         <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
         <button class="pdf-btn" onclick="exportPDF()">Export PDF</button>
@@ -148,7 +148,7 @@
   </div>
 
   <div id="print-area">
-    <h1 class="p-title">Factor Administration Log</h1>
+    <h1 class="p-title">Ksiazeczka podawania czynnika Kajetan Handzlik</h1>
     <div class="p-div"></div>
     <div class="p-meta" id="p-date"></div>
     <table>
@@ -343,7 +343,7 @@
           <td>${escapeHtml(item.notes || '-')}</td>
         </tr>
       `).join('');
-      document.getElementById('p-sum').textContent = `Total Entries: ${entries.length} | Total Factor Administered: ${total} IU`;
+      document.getElementById('p-sum').textContent = `Total Entries: ${entries.length}`;
       window.print();
     }
 
