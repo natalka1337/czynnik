@@ -20,17 +20,23 @@
     }
     .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; }
     .title { font-size: 28px; font-weight: 900; color: #E84A27; letter-spacing: 1.5px; }
+    .top-actions { display: flex; gap: 8px; }
+    .icon-btn {
+      background: #2A2433; border: 1px solid #F59E0B; color: #FBBF24;
+      padding: 8px; border-radius: 8px; font-size: 14px; cursor: pointer;
+    }
     .pdf-btn {
       background: #2A2433; border: 1px solid #F59E0B; color: #FBBF24;
       padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 13px;
     }
     .accent-line { height: 2px; background: #FACC15; margin-bottom: 14px; }
-    .form {
+    .panel {
       background: #221E2B; padding: 14px; border-radius: 12px;
       border: 1px solid #3B2832; margin-bottom: 14px;
     }
     .row { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
     .col { width: 48%; }
+    .col-full { width: 100%; margin-bottom: 10px; }
     label {
       display: block; font-size: 12px; font-weight: 700; color: #FBBF24;
       margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
@@ -68,6 +74,7 @@
     .units { font-size: 17px; font-weight: 800; color: #FFEDD5; }
     .notes { margin-top: 6px; font-size: 13px; color: #D6D3D1; }
     .empty { text-align: center; color: #78716C; margin-top: 30px; font-size: 14px; }
+    .sync-status { text-align: center; font-size: 11px; margin-top: -4px; margin-bottom: 10px; color: #9CA3AF; }
 
     #print-area { display: none; }
     @media print {
@@ -89,11 +96,28 @@
   <div id="app-ui">
     <div class="header">
       <div class="title">FACTOR</div>
-      <button class="pdf-btn" onclick="exportPDF()">Export PDF</button>
+      <div class="top-actions">
+        <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
+        <button class="pdf-btn" onclick="exportPDF()">Export PDF</button>
+      </div>
     </div>
     <div class="accent-line"></div>
 
-    <div class="form">
+    <div id="settings-panel" class="panel" style="display: none;">
+      <div class="col-full">
+        <label>GitHub Token</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+      <div class="col-full">
+        <label>Repository</label>
+        <input type="text" id="gh-repo" placeholder="username/repo">
+      </div>
+      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <div class="sync-status" id="sync-status"></div>
+
+    <div class="panel">
       <div class="row">
         <div class="col">
           <label>Date</label>
@@ -151,11 +175,80 @@
     document.getElementById('date').value = todayStr();
     if (entries.length > 0) document.getElementById('batch').value = entries[0].batchNumber;
 
+    document.getElementById('gh-token').value = localStorage.getItem('gh_token') || '';
+    document.getElementById('gh-repo').value = localStorage.getItem('gh_repo') || '';
+
     if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 
     function escapeHtml(t) {
       return String(t || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function utf8ToBase64(str) {
+      return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode('0x' + p1);
+      }));
+    }
+
+    function toggleSettings() {
+      const panel = document.getElementById('settings-panel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function saveSettings() {
+      localStorage.setItem('gh_token', document.getElementById('gh-token').value.trim());
+      localStorage.setItem('gh_repo', document.getElementById('gh-repo').value.trim());
+      toggleSettings();
+      syncToGitHub();
+    }
+
+    function updateSyncStatus(msg, isError = false) {
+      const status = document.getElementById('sync-status');
+      status.textContent = msg;
+      status.style.color = isError ? '#F87171' : '#9CA3AF';
+    }
+
+    async function syncToGitHub() {
+      const token = localStorage.getItem('gh_token');
+      const repo = localStorage.getItem('gh_repo');
+      if (!token || !repo) {
+        updateSyncStatus('GitHub sync not configured.');
+        return;
+      }
+
+      updateSyncStatus('Syncing to GitHub...');
+      const url = `https://api.github.com/repos/${repo}/contents/data.json`;
+      const headers = { Authorization: `token ${token}`, 'Content-Type': 'application/json' };
+
+      try {
+        const getRes = await fetch(url, { headers });
+        let sha = '';
+        if (getRes.ok) {
+          const getData = await getRes.json();
+          sha = getData.sha;
+        } else if (getRes.status !== 404) {
+          throw new Error('Failed to fetch file data.');
+        }
+
+        const contentStr = JSON.stringify(entries, null, 2);
+        const contentBase64 = utf8ToBase64(contentStr);
+
+        const putRes = await fetch(url, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({
+            message: 'Update entries via App',
+            content: contentBase64,
+            sha: sha || undefined
+          })
+        });
+
+        if (!putRes.ok) throw new Error('Failed to push data.');
+        updateSyncStatus('Successfully synced to GitHub.');
+      } catch (e) {
+        updateSyncStatus('Sync failed: ' + e.message, true);
+      }
     }
 
     function render() {
@@ -188,10 +281,7 @@
       const units = parseInt(document.getElementById('units').value.trim(), 10);
       const notes = document.getElementById('notes').value.trim();
 
-      if (!date || !batch || isNaN(units) || units <= 0) {
-        alert('Please fill in valid date, batch number, and positive units.');
-        return;
-      }
+      if (!date || !batch || isNaN(units) || units <= 0) return;
 
       if (editingId) {
         entries = entries.map(e => e.id === editingId ? { ...e, date, batchNumber: batch, units, notes } : e);
@@ -202,6 +292,7 @@
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
       cancelEdit();
+      syncToGitHub();
     }
 
     function startEdit(id) {
@@ -232,18 +323,15 @@
     }
 
     function deleteEntry(id) {
-      if (!confirm('Are you sure you want to delete this entry?')) return;
       entries = entries.filter(e => e.id !== id);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
       if (editingId === id) cancelEdit();
       else render();
+      syncToGitHub();
     }
 
     function exportPDF() {
-      if (entries.length === 0) {
-        alert('Add at least one entry before exporting to PDF.');
-        return;
-      }
+      if (entries.length === 0) return;
       const total = entries.reduce((s, i) => s + Number(i.units), 0);
       document.getElementById('p-date').textContent = 'Generated on: ' + todayStr();
       document.getElementById('p-body').innerHTML = entries.map((item, i) => `
@@ -260,6 +348,7 @@
     }
 
     render();
+    syncToGitHub();
   </script>
 </body>
 </html>
