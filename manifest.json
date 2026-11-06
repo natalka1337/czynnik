@@ -1,0 +1,15 @@
+{
+  "name": "Factor",
+  "short_name": "Factor",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#16141C",
+  "theme_color": "#16141C",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ]
+}
